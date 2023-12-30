@@ -4,6 +4,8 @@ SIPPing is a simple SIP packet forging tool written in pure Python.
 
 With SIPPing you can create SIP Requests based on simple text templates. In the command line you can define variables that will be substituted in template.
 
+SIPPing3 has been modified for **Python3**
+
 ### Features:
 
 * inline parsable templates for SIP messaging
