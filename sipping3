@@ -1,9 +1,11 @@
 #!/usr/bin/python3
 """
 
+======This version modified for Python3========
+
 SIP Ping - A diagnostic utility for critical VoIP monitoring
 Created by Daniel Thompson
-Version 1.0
+Version 2.0
 
 ==========================================================================
 
