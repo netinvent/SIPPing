@@ -161,18 +161,6 @@ args = vars(parser.parse_args())
 v_interval = int(args["I"])
 v_fromip = args["i"]
 v_sbc = args["host"]
-# did the user enter an IP?
-if re.match(r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}", v_sbc) is None:
-    # the user entered a hostname; resolve it
-    try:
-        v_sbc = socket.getaddrinfo(v_sbc, 5060)[0][4][0]
-    # socket.gaierror catches socket-specific exceptions but I think we can go without
-    # except socket.gaierror as error:
-    except Exception as exc:
-        # dns failure or no response
-        print(exc)
-        sys.exit(1)
-
 v_userid = args["u"]
 v_port = int(args["p"])
 v_domain = args["d"]
@@ -184,6 +172,22 @@ v_quiet = not args["q"]
 v_nostats = not args["S"]
 v_count = int(args["c"])
 v_rtt = args["rtt"] is None
+
+# did the user enter an IP?
+if re.match(r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}", v_sbc) is None:
+    # the user entered a hostname; resolve it
+    try:
+        v_sbc = socket.getaddrinfo(v_sbc, 5060)[0][4][0]
+    # socket.gaierror catches socket-specific exceptions but I think we can go without
+    # except socket.gaierror as error:
+    except Exception as exc:
+        if v_rtt:
+            print(0.0)
+            sys.exit(1)
+        # dns failure or no response
+        print(exc)
+        sys.exit(1)
+
 if v_count == 0:
     v_count = sys.maxsize
 
