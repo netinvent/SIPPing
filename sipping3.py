@@ -27,28 +27,25 @@ Commandline flags and defaults are available by running "python sipping.py -h"
 
 """
 
-from hashlib import md5
+import sys
 import random
 import re
-import cgi
-import cgitb
-import sys
 import os
 import socket
-import json
-import urllib.request, urllib.parse, urllib.error
+import argparse
+from datetime import datetime
+import time
 
 # handler for ctrl+c / SIGINT
 # last action before quitting is to write a \n to the end of the output file
 import signal
 
 
-def signal_handler(signal, frame):
-    print("\nCtrl+C - exiting.")
+def signal_handler(sig, frame):
+    print("\nCtrl+C ({}:{})- exiting.".format(sig, frame))
     if v_logpath != "*":
-        f_log = open(v_logpath, "a")
-        f_log.write("\n")
-        f_log.close()
+        with open(v_logpath, "a", encoding="utf-8") as _f_log:
+            _f_log.write("\n")
     printstats()
     sys.exit(0)
 
@@ -84,7 +81,6 @@ def printstats():
 
 
 # create and execute command line parser
-import argparse
 
 parser = argparse.ArgumentParser(
     description="Send SIP OPTIONS messages to a host and measure response time. Results are logged continuously to CSV."
@@ -160,15 +156,15 @@ v_interval = int(args["I"])
 v_fromip = args["i"]
 v_sbc = args["host"]
 # did the user enter an IP?
-if re.match("\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}", v_sbc) is None:
+if re.match(r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}", v_sbc) is None:
     # the user entered a hostname; resolve it
     try:
         v_sbc = socket.getaddrinfo(v_sbc, 5060)[0][4][0]
     # socket.gaierror catches socket-specific exceptions but I think we can go without
     # except socket.gaierror as error:
-    except Exception as error:
+    except Exception as exc:
         # dns failure or no response
-        print(error.strerror)
+        print(exc)
         sys.exit(1)
 
 v_userid = args["u"]
@@ -176,8 +172,8 @@ v_port = int(args["p"])
 v_domain = args["d"]
 v_ttl = args["ttl"]
 v_timeout = int(args["t"])
-v_rawsend = args["x"] == None
-v_rawrecv = args["X"] == None
+v_rawsend = args["x"] is None
+v_rawrecv = args["X"] is None
 v_quiet = not args["q"]
 v_nostats = not args["S"]
 v_count = int(args["c"])
@@ -195,9 +191,8 @@ else:
 if v_logpath != "*":
     if not os.path.isfile(v_logpath):
         # create new CSV file and write header
-        f_log = open(v_logpath, "w")
-        f_log.write("time,timestamp,host,latency,callid,response")
-        f_log.close()
+        with open(v_logpath, "w", encoding="utf-8") as f_log:
+            f_log.write("time,timestamp,host,latency,callid,response")
 
 
 def generate_nonce(length=8):
@@ -206,15 +201,12 @@ def generate_nonce(length=8):
 
 
 # writes onscreen timestamps in a consistent format
-from datetime import datetime
-import time
 
 
 def timef(timev=None):
-    if timev == None:
+    if timev is None:
         return datetime.now().strftime("%d/%m/%y %I:%M:%S:%f")
-    else:
-        return datetime.fromtimestamp(timev)
+    return datetime.fromtimestamp(timev)
 
 
 # register signal handler for ctrl+c since we're ready to start
@@ -342,15 +334,12 @@ Content-Length: 0
         l_history.append(diff)
         if len(l_history) > 200:
             l_history = l_history[1:]
-        if diff < v_min:
-            v_min = diff
-        if diff > v_max:
-            v_max = diff
+        v_min = min(v_min, diff)
+        v_max = max(v_max, diff)
         v_recd = v_recd + 1
         if v_current_run_loss > 0:
             v_last_run_loss = v_current_run_loss
-            if v_last_run_loss > v_longest_run:
-                v_longest_run = v_last_run_loss
+            v_longest_run = max(v_longest_run, v_last_run_loss)
             v_current_run_loss = 0
     except socket.timeout:
         # timed out; print a drop
@@ -382,9 +371,8 @@ Content-Length: 0
 
         # if logging is enabled, append stats to logfile
         if v_logpath != "*":
-            f_log = open(v_logpath, "a")
-            f_log.write("\n" + ("\n".join(l_current_results)))
-            f_log.close()
+            with open(v_logpath, "a", encoding="utf-8") as f_log:
+                f_log.write("\n" + ("\n".join(l_current_results)))
         l_current_results = []
 
         v_iter = 0
@@ -393,4 +381,4 @@ Content-Length: 0
     if v_count > 0:
         time.sleep(v_interval / 1000.0)
 if v_lost > 0:
-    exit(1)
+    sys.exit(1)
