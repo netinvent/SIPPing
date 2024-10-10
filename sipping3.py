@@ -148,6 +148,12 @@ parser.add_argument(
     help="Do not print status messages (-x and -X ignore this)",
 )
 parser.add_argument("-S", nargs="?", default=True, help="Do not print loss statistics")
+parser.add_argument(
+    "--rtt",
+    nargs="?",
+    default=False,
+    help="Only print rtt in ms on success, or 0.0 failure",
+)
 args = vars(parser.parse_args())
 
 # populate data from commandline
@@ -177,6 +183,7 @@ v_rawrecv = args["X"] is None
 v_quiet = not args["q"]
 v_nostats = not args["S"]
 v_count = int(args["c"])
+v_rtt = not args["rtt"]
 if v_count == 0:
     v_count = sys.maxsize
 
@@ -275,7 +282,7 @@ Content-Length: 0
     )
 
     # print transmit announcement
-    if not v_quiet:
+    if not v_quiet and not v_rtt:
         print(
             (
                 "> ({time}) Sending to {host}:{port} [id: {id}]".format(
@@ -305,7 +312,9 @@ Content-Length: 0
         v_response = data.split("\n".encode("utf-8"))[0]
 
         # print success message and response code
-        if not v_quiet:
+        if v_rtt:
+            print(diff)
+        elif not v_quiet:
             print(
                 (
                     "< ({time}) Reply from {host} ({diff}ms): {response}".format(
@@ -343,7 +352,9 @@ Content-Length: 0
             v_current_run_loss = 0
     except socket.timeout:
         # timed out; print a drop
-        if not v_quiet:
+        if v_rtt:
+            print(0.0)
+        elif not v_quiet:
             print(
                 (
                     "X ({time}) Timed out waiting for response from {host}".format(
