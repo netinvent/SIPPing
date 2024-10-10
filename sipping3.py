@@ -183,7 +183,7 @@ v_rawrecv = args["X"] is None
 v_quiet = not args["q"]
 v_nostats = not args["S"]
 v_count = int(args["c"])
-v_rtt = not args["rtt"]
+v_rtt = args["rtt"] is None
 if v_count == 0:
     v_count = sys.maxsize
 
