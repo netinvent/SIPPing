@@ -15,6 +15,7 @@ SIPPing3 has been modified for **Python3**
 * you can dynamically load any python module used by your python variables
 * *Content-Length* and *CSeq* headers can be automatically generated (if not present in template file)
 * print on stdout received response with regex substitution applied
+* --rtt parameter to only show RTT, useful for prometheus parsing
 
 ### Usage note:
 
